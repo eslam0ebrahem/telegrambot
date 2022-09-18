@@ -9,4 +9,9 @@ bot.on('text', (ctx) => {
   ctx.reply('👍');
 });
 bot.hears('hi', (ctx) => ctx.reply('Hey there'));
-bot.launch();
+bot.launch({
+  webhook: {
+    domain: 'https://lime-vivacious-bison.cyclic.app',
+    port,
+  },
+});
