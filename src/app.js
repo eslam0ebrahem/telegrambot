@@ -35,13 +35,10 @@ bot.on('text', (ctx) => {
   ctx.reply('👍');
 });
 bot.hears('hi', (ctx) => ctx.reply('Hey there'));
-bot.launch();
+// bot.launch();
 
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
-
-
-
 
 module.exports = app;
