@@ -9,9 +9,4 @@ bot.on('text', (ctx) => {
   ctx.reply('👍');
 });
 bot.hears('hi', (ctx) => ctx.reply('Hey there'));
-bot.launch({
-  webhook: {
-    domain: 'https://telegrambot-oqbvga.codecapsules.co.za',
-    port,
-  },
-});
+bot.launch();
