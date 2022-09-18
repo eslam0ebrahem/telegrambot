@@ -12,7 +12,7 @@ bot.on('text', (ctx) => {
 bot.hears('hi', (ctx) => ctx.reply('Hey there'));
 bot.launch({
   webhook: {
-    domain: 'telegrambot-oqbvga.codecapsules.co.za',
+    domain: 'https://telegrambot-oqbvga.codecapsules.co.za',
     port,
   },
 });
