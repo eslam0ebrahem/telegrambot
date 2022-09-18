@@ -1,5 +1,4 @@
 const { Telegraf } = require('telegraf');
-const app = require('./app');
 
 const port = process.env.PORT || 5000;
 
@@ -15,10 +14,4 @@ bot.launch({
     domain: 'https://telegrambot-oqbvga.codecapsules.co.za',
     port,
   },
-});
-
-app.listen(port, () => {
-  /* eslint-disable no-console */
-  console.log(`Listening: http://localhost:${port}`);
-  /* eslint-enable no-console */
 });
