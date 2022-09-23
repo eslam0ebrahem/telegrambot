@@ -23,6 +23,14 @@ module.exports = {
       .insertOne({ deckID: new ObjectId(props.deckID), ...props.card })
       .then((res) => { d.close(); next(null, res); }))
     .catch((err) => next(err)),
+  updateCard: ({ _id, level }, next) => new MongoClient(DB)
+    .connect()
+    .then((d) => d
+      .db('telegram')
+      .collection('cards')
+      .updateOne({ _id }, [{ $set: { level } }])
+      .then((res) => { d.close(); next(null, res); }))
+    .catch((err) => next(err)),
   getDecks: (props, next) => new MongoClient(DB)
     .connect()
     .then((d) => {

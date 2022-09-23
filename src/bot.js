@@ -1,12 +1,14 @@
 const { Telegraf, Markup } = require('telegraf');
 const {
-  addNewDeck, getDecks, getDeck, addNewCard,
+  addNewDeck, getDecks, getDeck, addNewCard, updateCard,
 } = require('./config/db');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 // bot.use(Telegraf.log());
 let temp;
-let card = {};
+let flag;
+let cards = [];
+const card = {};
 const keyboard = {
   menu: [
     'Menu',
@@ -59,13 +61,26 @@ bot.action(/back_.+/, (ctx) => {
   temp = null;
   ctx.editMessageText(...keyboard[ctx.match.input.split('_')[1]]);
 });
+bot.action(/level_.+/, (ctx) => updateCard({ _id: cards[flag]._id, level: ctx.match.input.split('_')[1] }, async (err, res) => {
+  flag += 1;
+  if (flag >= cards.length) {
+    // ctx.editMessageText().catch((err) => console.log(err.description));
+    await ctx.reply('congratulations 🎉');
+  }
+
+  // getDeck;
+}));
+
+// temp = null;
+// ctx.editMessageText(...keyboard[ctx.match.input.split('_')[1]]);
 bot.action(/card_.+/, (ctx) => {
   const side = ctx.match.input.split('_')[1];
-  ctx.editMessageText(...keyboard.checkCard(card[side], side === 'front' ? 'back' : 'front'))
+  ctx.editMessageText(...keyboard.checkCard(cards[flag][side], side === 'front' ? 'back' : 'front'))
     .catch((err) => console.error(err.description));
 });
 bot.action(/get_.+/, (ctx) => getDeck({ id: ctx.match.input.split('_')[1], userID: ctx.chat.id }, async (err, r) => {
-  const { cards, name } = r;
+  cards = r.cards;
+  const { name } = r;
   temp = null;
   if (err) {
     console.error(err);
@@ -73,9 +88,9 @@ bot.action(/get_.+/, (ctx) => getDeck({ id: ctx.match.input.split('_')[1], userI
     ctx.editMessageText(...keyboard.noCards(name, ctx.match.input.split('_')[1]));
   } else {
     temp = 'checkCard';
-    [card] = cards;
+    flag = 0;
     await ctx.reply(`${cards.length}/${cards.length} cards left to rehearse in in* ${name} *`, { parse_mode: 'Markdown' });
-    await ctx.reply(...keyboard.checkCard(card.front, 'back'));
+    await ctx.reply(...keyboard.checkCard(cards[flag].front, 'back'));
   }
 }));
 bot.action('decks', (ctx) => getDecks(null, (err, res) => {
@@ -128,7 +143,7 @@ bot.on(['text', 'photo'], async (ctx) => {
     });
   } else if (/addCard_.+/.test(temp)) {
     const actionData = temp.split('_');
-    ctx.telegram.editMessageText(
+    await ctx.telegram.editMessageText(
       ctx.chat.id,
       ctx.message.message_id - 1,
       undefined,
@@ -153,10 +168,15 @@ bot.on(['text', 'photo'], async (ctx) => {
       }
     });
   } else if (temp === 'checkCard') {
-    if (ctx.message.text === card.back)ctx.reply('Done ✅'); else {
+    if (ctx.message.text === cards[flag].back)ctx.reply('Done ✅'); else {
+      ctx.telegram.editMessageText(
+        ctx.chat.id,
+        ctx.message.message_id - 1,
+        undefined,
+        cards[flag].front,
+      );
       await ctx.reply('Wrong ❌');
-      await ctx.reply(card.front);
-
+      await ctx.reply(...keyboard.checkCard(cards[flag].front, 'back'));
       return;
     }
   }
