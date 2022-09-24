@@ -33,13 +33,19 @@ const keyboard = {
       { wrap: () => 1 },
     ),
   }],
-  checkCard: (data, side) => [data, {
+  checkCard: ({ text, id }, side) => [text, {
     ...Markup.inlineKeyboard([
       Markup.button.callback('☺️ Easy', 'level_1'),
       Markup.button.callback('🙂 Recalled', 'level_2'),
       Markup.button.callback('😮 No idea', 'level_3'),
       Markup.button.callback(`🔄 Show ${side}`, `card_${side}`),
-    ], { wrap: (btn, index, currentRow) => currentRow.length >= (index + 3) / 2 }),
+      Markup.button.callback('➕ New Card', `addCard_${id}_front`),
+      Markup.button.callback('📝 Edit Card', 'editCard'),
+      Markup.button.callback('✏️ Edit Deck', 'editDeck'),
+      Markup.button.callback('🔙', 'decks'),
+    ], {
+      wrap: (_btn, index) => index === 3 || index === 4 || index === 7,
+    }),
   }],
   Not: [
     'not',
@@ -53,6 +59,20 @@ const keyboard = {
       ),
     },
   ],
+  editCard: () => [
+    'What would you like to do?',
+    {
+      ...Markup.inlineKeyboard(
+        [
+          Markup.button.callback('✏️ Edit front', 'new deck'),
+          Markup.button.callback('✏️ Edit back', 'decks'),
+          Markup.button.callback('🗑 Delete', 'decks'),
+          Markup.button.callback('🔙', `get_${cards[flag] && cards[flag].deckID}`),
+        ],
+        { wrap: () => 1 },
+      ),
+    },
+  ],
 };
 bot.start((ctx) => ctx.reply('Welcome'));
 bot.help((ctx) => ctx.reply('Send me a sticker'));
@@ -61,12 +81,19 @@ bot.action(/back_.+/, (ctx) => {
   temp = null;
   ctx.editMessageText(...keyboard[ctx.match.input.split('_')[1]]);
 });
-bot.action(/level_.+/, (ctx) => updateCard({ _id: cards[flag]._id, level: ctx.match.input.split('_')[1] }, async (err, res) => {
+bot.action('editCard', (ctx) => {
+  console.log(cards[flag].deckID);
+  ctx.editMessageText(...keyboard.editCard());
+});
+bot.action(/level_.+/, (ctx) => updateCard({ _id: cards[flag].deckID, level: ctx.match.input.split('_')[1] }, (err, res) => {
   flag += 1;
+  ctx.deleteMessage();
+
   if (flag >= cards.length) {
-    // ctx.editMessageText().catch((err) => console.log(err.description));
-    await ctx.reply('congratulations 🎉');
-  }
+    // ctx.editMessageText(cards[flag - 1].front).catch((err) => console.log(err.description));
+
+    ctx.reply('congratulations 🎉');
+  } else { ctx.reply(...keyboard.checkCard({ text: cards[flag].front, id: cards[flag].deckID }, 'back')); }
 
   // getDeck;
 }));
@@ -75,13 +102,15 @@ bot.action(/level_.+/, (ctx) => updateCard({ _id: cards[flag]._id, level: ctx.ma
 // ctx.editMessageText(...keyboard[ctx.match.input.split('_')[1]]);
 bot.action(/card_.+/, (ctx) => {
   const side = ctx.match.input.split('_')[1];
-  ctx.editMessageText(...keyboard.checkCard(cards[flag][side], side === 'front' ? 'back' : 'front'))
+  ctx.editMessageText(...keyboard.checkCard({ text: cards[flag][side], id: cards[flag].deckID }, side === 'front' ? 'back' : 'front'))
     .catch((err) => console.error(err.description));
 });
 bot.action(/get_.+/, (ctx) => getDeck({ id: ctx.match.input.split('_')[1], userID: ctx.chat.id }, async (err, r) => {
+  console.log('hereeee', ctx.match.input, cards[flag]);
   cards = r.cards;
   const { name } = r;
   temp = null;
+  ctx.deleteMessage();
   if (err) {
     console.error(err);
   } else if (!cards || !cards.length) {
@@ -89,8 +118,8 @@ bot.action(/get_.+/, (ctx) => getDeck({ id: ctx.match.input.split('_')[1], userI
   } else {
     temp = 'checkCard';
     flag = 0;
-    await ctx.reply(`${cards.length}/${cards.length} cards left to rehearse in in* ${name} *`, { parse_mode: 'Markdown' });
-    await ctx.reply(...keyboard.checkCard(cards[flag].front, 'back'));
+    await ctx.reply(`${cards.length} cards left to rehearse in in* ${name} *`, { parse_mode: 'Markdown' });
+    await ctx.reply(...keyboard.checkCard({ text: cards[flag].front, id: cards[flag].deckID }, 'back'));
   }
 }));
 bot.action('decks', (ctx) => getDecks(null, (err, res) => {
@@ -176,7 +205,7 @@ bot.on(['text', 'photo'], async (ctx) => {
         cards[flag].front,
       );
       await ctx.reply('Wrong ❌');
-      await ctx.reply(...keyboard.checkCard(cards[flag].front, 'back'));
+      await ctx.reply(...keyboard.checkCard({ text: cards[flag].front, id: cards[flag].deckID }, 'back'));
       return;
     }
   }
