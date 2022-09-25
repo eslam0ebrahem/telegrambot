@@ -1,6 +1,6 @@
 const { Telegraf, Markup } = require('telegraf');
 const {
-  addNewDeck, getDecks, getDeck, addNewCard, updateCard, deleteCard, editCard, editDeck,
+  addNewDeck, getDecks, getDeck, addNewCard, updateCard, deleteCard, editCard, editDeck, deleteDeck,
 } = require('./config/db');
 const { keyboard } = require('./keyboard');
 
@@ -25,12 +25,15 @@ bot.action(/edit_.+/, (ctx) => {
 
 bot.action(/deck_.+/, (ctx) => {
   const action = ctx.match.input.split('_')[1];
-  if (action === 'edit') {
-    temp = ctx.match.input;
-    ctx.editMessageText('Please send a message to update the deck name.', {
+  temp = ctx.match.input;
+  return action === 'edit'
+    ? ctx.editMessageText('Please send a message to update the deck name.', {
       ...Markup.inlineKeyboard([Markup.button.callback('🔙', 'editDeck')]),
+    })
+    : deleteDeck(cards[flag].deckID, (err, res) => {
+      if (err)console.error(err);
+      ctx.editMessageText('Deck has been deleted');
     });
-  }
 });
 bot.action('editCard', (ctx) => {
   temp = null;
@@ -44,7 +47,7 @@ bot.action('deleteCard', (ctx) => deleteCard(cards[flag]._id, (err, res) => {
   if (err)console.error(err);
   ctx.editMessageText('Card has been deleted');
 }));
-bot.action(/level_.+/, (ctx) => updateCard({ _id: cards[flag].deckID, level: ctx.match.input.split('_')[1] }, (err, res) => {
+bot.action(/level_.+/, (ctx) => updateCard({ _id: cards[flag]._id, level: ctx.match.input.split('_')[1] }, (err, res) => {
   flag += 1;
   ctx.deleteMessage();
 
@@ -65,15 +68,17 @@ bot.action(/card_.+/, (ctx) => {
     .catch((err) => console.error(err.description));
 });
 bot.action(/get_.+/, (ctx) => getDeck({ id: ctx.match.input.split('_')[1], userID: ctx.chat.id }, async (err, r) => {
-  cards = r.cards;
+  cards = r.cards.filter((c) => !(((Math.abs(new Date() - c.lastTest) / (1000 * 60 * 60)) < 24) && c.level === '2')
+  || !(((Math.abs(new Date() - c.lastTest) / (1000 * 60 * 60)) < 48) && c.level === '1')
+  || c.level === '3');
   const { name } = r;
   temp = null;
-  ctx.deleteMessage();
   if (err) {
     console.error(err);
   } else if (!cards || !cards.length) {
     ctx.editMessageText(...keyboard.noCards(name, ctx.match.input.split('_')[1]));
   } else {
+    ctx.deleteMessage();
     temp = 'checkCard';
     flag = 0;
     await ctx.reply(`${cards.length} cards left to rehearse in in* ${name} *`, { parse_mode: 'Markdown' });
@@ -103,6 +108,7 @@ bot.action(/addCard_.+/, (ctx) => {
     ...Markup.inlineKeyboard([Markup.button.callback('🔙', `get_${ctx.match.input.split('_')[1]}`)]),
   });
 });
+
 bot.action('new deck', (ctx) => {
   temp = 'new deck';
   ctx.editMessageText("What's the name of the new deck?", {

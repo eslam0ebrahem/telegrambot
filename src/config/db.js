@@ -28,7 +28,7 @@ module.exports = {
     .then((d) => d
       .db('telegram')
       .collection('cards')
-      .updateOne({ _id }, [{ $set: { level } }])
+      .updateOne({ _id }, [{ $set: { level, lastTest: new Date() } }])
       .then((res) => { d.close(); next(null, res); }))
     .catch((err) => next(err)),
   editCard: ({ _id, side, text }, next) => new MongoClient(DB)
@@ -53,6 +53,19 @@ module.exports = {
       .collection('cards')
       .deleteOne({ _id })
       .then((res) => { d.close(); next(null, res); }))
+    .catch((err) => next(err)),
+  deleteDeck: (_id, next) => new MongoClient(DB)
+    .connect()
+    .then((d) => d
+      .db('telegram')
+      .collection('decks')
+      .deleteOne({ _id })
+      .then(() => {
+        d.db('telegram')
+          .collection('cards')
+          .deleteMany({ deckID: _id }).then((res) => { d.close(); next(null, res); })
+          .catch((err) => next(err));
+      }))
     .catch((err) => next(err)),
   getDecks: (props, next) => new MongoClient(DB)
     .connect()
