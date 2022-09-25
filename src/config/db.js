@@ -31,6 +31,29 @@ module.exports = {
       .updateOne({ _id }, [{ $set: { level } }])
       .then((res) => { d.close(); next(null, res); }))
     .catch((err) => next(err)),
+  editCard: ({ _id, side, text }, next) => new MongoClient(DB)
+    .connect()
+    .then((d) => d
+      .db('telegram')
+      .collection('cards')
+      .updateOne({ _id }, [{ $set: { [side]: text } }])
+      .then((res) => { d.close(); next(null, res); })),
+  editDeck: ({ _id, name }, next) => new MongoClient(DB)
+    .connect()
+    .then((d) => d
+      .db('telegram')
+      .collection('decks')
+      .updateOne({ _id }, [{ $set: { name } }])
+      .then((res) => { d.close(); next(null, res); }))
+    .catch((err) => next(err)),
+  deleteCard: (_id, next) => new MongoClient(DB)
+    .connect()
+    .then((d) => d
+      .db('telegram')
+      .collection('cards')
+      .deleteOne({ _id })
+      .then((res) => { d.close(); next(null, res); }))
+    .catch((err) => next(err)),
   getDecks: (props, next) => new MongoClient(DB)
     .connect()
     .then((d) => {
@@ -43,7 +66,7 @@ module.exports = {
         .catch((err) => next(err));
     })
     .catch((err) => next(err)),
-  getDeck: ({ id, userID }, next) => new MongoClient(DB)
+  getDeck: ({ id }, next) => new MongoClient(DB)
     .connect()
     .then((d) => d
       .db('telegram')
